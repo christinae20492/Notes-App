@@ -19,15 +19,13 @@ const NoteItem: React.FC<NoteItemProps> = ({
   isPinned,
   onClick,
 }) => {
-
-
   return (
     <div
       key={note.id}
       className={`note-item ${
         isPinned ? "font-semibold bg-lightgrey w-3/4" : ""
       } ${isSelected ? "selected-note" : ""}`}
-      onClick={()=>onClick(note)}
+      onClick={() => onClick(note)}
       onContextMenu={(e) => {
         e.preventDefault();
       }}
@@ -36,7 +34,9 @@ const NoteItem: React.FC<NoteItemProps> = ({
         <FormOutlined />
       </div>
       <div
-        className={`fixed rounded-lg ${isPinned ? "w-2 h-8 outline-1 outline-black" : "w-5 h-14"}`}
+        className={`fixed rounded-lg ${
+          isPinned ? "w-2 h-8 outline-1 outline-black" : "w-5 h-14"
+        }`}
         style={{ backgroundColor: note.color }}
       ></div>
       <div>{note.title}</div>

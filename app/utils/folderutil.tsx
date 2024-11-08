@@ -6,7 +6,6 @@ import { idGen, getCurrentDateTime } from "./rangen";
 
 export const loadFolders = (): Folder[] => getFolders();
 
-
 export const createFolder = (
   folderName: string,
   setFolders: React.Dispatch<React.SetStateAction<Folder[]>>,
@@ -103,12 +102,12 @@ export const removeNoteFromFolder = (
 
     if (noteToRemove) {
       const updatedMainNotes = [...mainNotes, noteToRemove];
-            saveFolders(updatedFolders);
+      saveFolders(updatedFolders);
       saveNotes(updatedMainNotes);
       setFolders(updatedFolders);
       setNotes(updatedMainNotes);
 
-    navigation.navigate("Home");
+      navigation.navigate("Home");
 
       successToast("Note moved back to main notes successfully!");
     } else {
@@ -122,7 +121,7 @@ export const removeNoteFromFolder = (
 
 export const addNotesToFolder = (
   noteIds: string[],
-  folderId:string,
+  folderId: string,
   setNotes: React.Dispatch<React.SetStateAction<Note[]>>,
   setFolders: React.Dispatch<React.SetStateAction<Folder[]>>
 ): void => {

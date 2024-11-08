@@ -116,27 +116,26 @@ export const deleteNote = (
 ): void => {
   try {
     const notes = getNotesArray(folderId);
-    const noteToDelete = notes.find(note => note.id === id);
+    const noteToDelete = notes.find((note) => note.id === id);
 
     if (!noteToDelete) {
       failToast("Note not found.");
       return;
     }
 
-    const remainingNotes = notes.filter(note => note.id !== id);
+    const remainingNotes = notes.filter((note) => note.id !== id);
     noteToDelete.dateDeleted = new Date().toISOString(); // Set deletion date
     saveNotesArray(remainingNotes, folderId);
     const trashNotes = getTrash();
     saveTrash([...trashNotes, noteToDelete]);
 
     setNotes(remainingNotes);
-    successToast('Note deleted successfully!');
-    navigate('/');
+    successToast("Note deleted successfully!");
+    navigate("/");
   } catch (error) {
     failToast(`Failed to delete note: ${error}`);
   }
 };
-
 
 export const permanentlyDeleteNote = (
   id: string,
@@ -234,13 +233,14 @@ export const copyNote = (
     dateCreated: getCurrentDateTime(),
   };
 
-    if (folderId) {
-      const updatedNotes = [...existingNotes, copiedNote];
-      saveNotesArray(updatedNotes)
-    } else{
-  const updatedNotes = [...getNotes(), copiedNote];
-  setNotes(updatedNotes);
-  saveNotes(updatedNotes);}
+  if (folderId) {
+    const updatedNotes = [...existingNotes, copiedNote];
+    saveNotesArray(updatedNotes);
+  } else {
+    const updatedNotes = [...getNotes(), copiedNote];
+    setNotes(updatedNotes);
+    saveNotes(updatedNotes);
+  }
 
   successToast("Note copied successfully!");
 };
@@ -271,12 +271,12 @@ export const searchNotes = (query: string, folderId?: string): Note[] => {
   console.log(query);
 
   if (!query.trim()) {
-    return notes; 
+    return notes;
   }
 
   const normalizedQuery = query.toLowerCase();
   return notes.filter(
-    note =>
+    (note) =>
       note.title.toLowerCase().includes(normalizedQuery) ||
       note.body.toLowerCase().includes(normalizedQuery)
   );
@@ -293,9 +293,9 @@ export const moveMultipleNotesToTrash = (
     const existingNotes = getNotesArray(folderId);
     const trashNotes = loadTrash();
     const notesToTrash = existingNotes.filter((note) => ids.includes(note.id));
-    notesToTrash.map((item)=>{
+    notesToTrash.map((item) => {
       item.dateDeleted = new Date().toISOString();
-    })
+    });
     const newNotes = existingNotes.filter((note) => !ids.includes(note.id));
 
     localStorage.setItem(NOTES_KEY, JSON.stringify(newNotes));

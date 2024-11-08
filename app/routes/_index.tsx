@@ -58,7 +58,6 @@ export default function Index() {
 
   const [currentNote, setCurrentNote] = useState("");
 
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -84,22 +83,21 @@ export default function Index() {
     setModalOpen(false);
   };
 
-  const handleAddNotes = () =>{
-    
-const getFolderIdFromNotes = (ids) =>{
-  for (let i=0; i<ids.length; i++) {
-    if (ids[i].startsWith('F')) {
-      return ids[i];
-    }
-  }
-}
+  const handleAddNotes = () => {
+    const getFolderIdFromNotes = (ids) => {
+      for (let i = 0; i < ids.length; i++) {
+        if (ids[i].startsWith("F")) {
+          return ids[i];
+        }
+      }
+    };
 
-let folder = getFolderIdFromNotes(selectedNotes);
+    let folder = getFolderIdFromNotes(selectedNotes);
 
-addNotesToFolder(selectedNotes, folder, setNotes, setFolders)
-setIsMultiSelect(false);
-setSelectedNotes([]);
-  }
+    addNotesToFolder(selectedNotes, folder, setNotes, setFolders);
+    setIsMultiSelect(false);
+    setSelectedNotes([]);
+  };
 
   const handleSelectAllNotes = (notesArray) => {
     if (selectedNotes.length === notesArray.length) {
@@ -116,7 +114,9 @@ setSelectedNotes([]);
 
   const handleSelectFolder = (folderId: string) => {
     setSelectedNotes((prev) =>
-      prev.includes(folderId) ? prev.filter((id) => id !== folderId) : [...prev, folderId]
+      prev.includes(folderId)
+        ? prev.filter((id) => id !== folderId)
+        : [...prev, folderId]
     );
   };
 
@@ -128,8 +128,8 @@ setSelectedNotes([]);
           : [...prev, note.id];
       });
     } else {
-    setCurrentNote(note);
-        setModalOpen(true);
+      setCurrentNote(note);
+      setModalOpen(true);
     }
   };
 
@@ -146,9 +146,7 @@ setSelectedNotes([]);
         setShowSettings={setShowSettings}
         setRefresh={setRefresh}
       >
-        {searchBar && (
-          <SearchBar setNotes={setNotes} />
-        )}
+        {searchBar && <SearchBar setNotes={setNotes} />}
 
         <div className="bg-lightgrey p-8 rounded-lg shadow-lg w-lg text-center">
           {folders.length === 0 ? (
@@ -159,12 +157,12 @@ setSelectedNotes([]);
             <div className="note-container">
               {folders.map((folder) => (
                 <FolderItem
-                key={folder.id}
-                folder={folder}
-                isSelected={selectedNotes.includes(folder.id)}
-                isMultiSelect={isMultiSelect}
-                onSelect={handleSelectFolder}
-              />
+                  key={folder.id}
+                  folder={folder}
+                  isSelected={selectedNotes.includes(folder.id)}
+                  isMultiSelect={isMultiSelect}
+                  onSelect={handleSelectFolder}
+                />
               ))}
             </div>
           )}
@@ -208,13 +206,13 @@ setSelectedNotes([]);
             <div className="note-container">
               {pinnedNotes.map((note) => (
                 <NoteItem
-                key={note.id}
-                note={note}
-                isSelected={selectedNotes.includes(note.id)}
-                isPinned={true}
-                isMultiSelect={isMultiSelect}
-                onClick={handleNoteClick}
-              />
+                  key={note.id}
+                  note={note}
+                  isSelected={selectedNotes.includes(note.id)}
+                  isPinned={true}
+                  isMultiSelect={isMultiSelect}
+                  onClick={handleNoteClick}
+                />
               ))}
             </div>
           )}
@@ -229,13 +227,13 @@ setSelectedNotes([]);
             <div className="note-container">
               {regularNotes.map((note) => (
                 <NoteItem
-                key={note.id}
-                note={note}
-                isSelected={selectedNotes.includes(note.id)}
-                isPinned={false}
-                isMultiSelect={isMultiSelect}
-                onClick={handleNoteClick}
-              />
+                  key={note.id}
+                  note={note}
+                  isSelected={selectedNotes.includes(note.id)}
+                  isPinned={false}
+                  isMultiSelect={isMultiSelect}
+                  onClick={handleNoteClick}
+                />
               ))}
             </div>
           )}

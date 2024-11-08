@@ -41,7 +41,9 @@ export default function TrashPage() {
   useEffect(() => {
     removeExpiredNotes();
     fetchData();
-    warnToast('Notes that\'ve been trashed 7 days ago will automatically be permanently deleted.')
+    warnToast(
+      "Notes that've been trashed 7 days ago will automatically be permanently deleted."
+    );
   }, []);
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export default function TrashPage() {
       return;
     }
     deleteMultipleNotes(selectedNotes, setTrashNotes, () => {});
-    setSelectedNotes([]); 
+    setSelectedNotes([]);
   };
 
   const handleRestoreSelectedNotes = () => {
@@ -111,20 +113,22 @@ export default function TrashPage() {
       const trashNotes = getTrash();
       const nonExpiredNotes: Note[] = [];
       const now = Date.now();
-  
-      trashNotes.forEach(note => {
+
+      trashNotes.forEach((note) => {
         const dateDeleted = new Date(note.dateDeleted!).getTime();
         const ageInDays = (now - dateDeleted) / (1000 * 60 * 60 * 24);
-  
+
         if (ageInDays >= 6 && ageInDays < 7) {
-          warnToast(`Warning: Note "${note.title}" will be permanently deleted in 1 day.`);
+          warnToast(
+            `Warning: Note "${note.title}" will be permanently deleted in 1 day.`
+          );
         }
-  
+
         if (ageInDays < 7) {
           nonExpiredNotes.push(note);
         }
       });
-  
+
       if (nonExpiredNotes.length !== trashNotes.length) {
         saveTrash(nonExpiredNotes);
       }
@@ -179,18 +183,15 @@ export default function TrashPage() {
           ) : (
             <div className="note-container">
               {trashNotes.map((note) => (
-                <div
-                  key={note.id}
-                  className=""
-                >
+                <div key={note.id} className="">
                   <NoteItem
-                key={note.id}
-                note={note}
-                isSelected={selectedNotes.includes(note.id)}
-                isPinned={false}
-                isMultiSelect={isMultiSelect}
-                onClick={handleNoteClick}
-              />
+                    key={note.id}
+                    note={note}
+                    isSelected={selectedNotes.includes(note.id)}
+                    isPinned={false}
+                    isMultiSelect={isMultiSelect}
+                    onClick={handleNoteClick}
+                  />
                 </div>
               ))}
             </div>
@@ -208,15 +209,15 @@ export default function TrashPage() {
           Are you sure you want to permanently delete this note?
         </Modal>
 
-        <NoteModal 
-        isOpen={isModalOpen}
-        note={currentNote}
-        onClose={() => setModalOpen(false)}
-        onSaveNote={null}
-        setNotes={null}
-        setTrashNotes={setTrashNotes}
-        navigate={navigate}
-        isInFolder={false}
+        <NoteModal
+          isOpen={isModalOpen}
+          note={currentNote}
+          onClose={() => setModalOpen(false)}
+          onSaveNote={null}
+          setNotes={null}
+          setTrashNotes={setTrashNotes}
+          navigate={navigate}
+          isInFolder={false}
           isInTrash={true}
           folderId={undefined}
         />

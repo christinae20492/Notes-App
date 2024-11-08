@@ -58,7 +58,6 @@ export default function ViewFolder() {
   const pinnedNotes = notes.filter((note) => note.tag === "important");
   const normalNotes = notes.filter((note) => note.tag !== "important");
 
-
   const fetchData = async () => {
     const loadedFolders = await loadFolders();
     const foldersArray = Array.isArray(loadedFolders) ? loadedFolders : [];
@@ -159,7 +158,7 @@ export default function ViewFolder() {
   const handleTogglePinNotes = () => {
     togglePinNotes(selectedNotes, setNotes, folder.id);
     setSelectedNotes([]);
-    setIsMultiSelect(false)
+    setIsMultiSelect(false);
   };
 
   const handleRemoveNotes = async () => {
@@ -182,18 +181,18 @@ export default function ViewFolder() {
           : [...prev, note.id];
       });
     } else {
-    setCurrentNote(note);
-        setModalOpen(true);
+      setCurrentNote(note);
+      setModalOpen(true);
     }
   };
 
-  const mainNoteClick = (note) =>{
+  const mainNoteClick = (note) => {
     setSelectedNotes((prev) => {
       return prev.includes(note.id)
         ? prev.filter((id) => id !== note.id)
         : [...prev, note.id];
     });
-  }
+  };
 
   if (!folder) {
     return <div>Loading...</div>;
@@ -256,13 +255,13 @@ export default function ViewFolder() {
             <div className="note-container">
               {pinnedNotes.map((note) => (
                 <NoteItem
-                key={note.id}
-                note={note}
-                isSelected={selectedNotes.includes(note.id)}
-                isPinned={true}
-                isMultiSelect={isMultiSelect}
-                onClick={handleNoteClick}
-              />
+                  key={note.id}
+                  note={note}
+                  isSelected={selectedNotes.includes(note.id)}
+                  isPinned={true}
+                  isMultiSelect={isMultiSelect}
+                  onClick={handleNoteClick}
+                />
               ))}
             </div>
           )}
@@ -277,13 +276,13 @@ export default function ViewFolder() {
             <div className="note-container">
               {normalNotes.map((note) => (
                 <NoteItem
-                key={note.id}
-                note={note}
-                isSelected={selectedNotes.includes(note.id)}
-                isPinned={false}
-                isMultiSelect={isMultiSelect}
-                onClick={handleNoteClick}
-              />
+                  key={note.id}
+                  note={note}
+                  isSelected={selectedNotes.includes(note.id)}
+                  isPinned={false}
+                  isMultiSelect={isMultiSelect}
+                  onClick={handleNoteClick}
+                />
               ))}
             </div>
           )}
@@ -302,13 +301,13 @@ export default function ViewFolder() {
                 <div className="note-container">
                   {mainNotes.map((note) => (
                     <NoteItem
-                    key={note.id}
-                    note={note}
-                    isSelected={selectedNotes.includes(note.id)}
-                    isPinned={false}
-                    isMultiSelect={isMultiSelect}
-                    onClick={mainNoteClick}
-                  />
+                      key={note.id}
+                      note={note}
+                      isSelected={selectedNotes.includes(note.id)}
+                      isPinned={false}
+                      isMultiSelect={isMultiSelect}
+                      onClick={mainNoteClick}
+                    />
                   ))}
                 </div>
               </div>
@@ -327,10 +326,7 @@ export default function ViewFolder() {
             <button className="mx-3 scale-150" onClick={handleRemoveNotes}>
               <MinusOutlined />
             </button>
-            <button
-              className="mx-3 scale-150"
-              onClick={handleTogglePinNotes}
-            >
+            <button className="mx-3 scale-150" onClick={handleTogglePinNotes}>
               <PushpinOutlined />
             </button>
             <button
