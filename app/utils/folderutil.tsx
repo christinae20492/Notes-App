@@ -1,151 +1,218 @@
-import { loadNotes } from './noteutility';
-import { successToast, failToast } from './toast';
-import { idGen, getCurrentDateTime } from './rangen';
+import { loadNotes } from "./noteutility";
+import { Note, Folder } from "./types";
+import { getFolders, saveFolders, getNotes, saveNotes } from "./localStorage";
+import { successToast, failToast } from "./toast";
+import { idGen, getCurrentDateTime } from "./rangen";
 
-const FOLDERS_KEY = 'folders';
-const NOTES_KEY = 'notes';
+export const loadFolders = (): Folder[] => getFolders();
 
-// Load Folders Function (using localStorage)
-export const loadFolders = () => {
+
+export const createFolder = (
+  folderName: string,
+  setFolders: React.Dispatch<React.SetStateAction<Folder[]>>,
+  setNewFolder: React.Dispatch<React.SetStateAction<string>>,
+  setTextInputVisible: React.Dispatch<React.SetStateAction<boolean>>
+): void => {
   try {
-    const jsonValue = localStorage.getItem(FOLDERS_KEY);
-    return jsonValue != null ? JSON.parse(jsonValue) : [];
-  } catch (error) {
-    failToast(`Failed to load folders: ${error}`);
-    return [];
-  }
-};
+    const existingFolders = getFolders();
+    const newFolder: Folder = {
+      title: folderName,
+      id: "F" + idGen(),
+      dateCreated: getCurrentDateTime(),
+      notes: [],
+    };
 
-export const createFolder = (folderName: string, setFolders: (arg0: any[]) => void, setNewFolder: (arg0: string) => void, setTextInputVisible: (arg0: boolean) => void) => {
-  try {
-    const existingFolders = loadFolders();
-    const newFolder = { title: folderName, id: idGen(), dateCreated: getCurrentDateTime(), notes: [] };
-    const newFolders = [...existingFolders, newFolder];
-
-    setFolders(newFolders);
-    localStorage.setItem(FOLDERS_KEY, JSON.stringify(newFolders));
-    setNewFolder('');
+    const updatedFolders = [...existingFolders, newFolder];
+    saveFolders(updatedFolders);
+    setFolders(updatedFolders);
+    setNewFolder("");
     setTextInputVisible(false);
 
-    successToast('New folder created!');
+    successToast("New folder created!");
   } catch (error) {
     failToast(`Folder creation failed: ${error}`);
   }
 };
 
-export const moveNoteToFolder = (noteId: string, folderId: string, setNotes: (arg0: any) => void, setFolders: (arg0: any) => void, navigation: { navigate: (arg0: string) => void }) => {
+export const moveNoteToFolder = (
+  noteId: string,
+  folderId: string,
+  setNotes: (arg0: any) => void,
+  setFolders: (arg0: any) => void,
+  navigation: { navigate: (arg0: string) => void }
+) => {
   try {
     const existingNotes = loadNotes();
     const existingFolders = loadFolders();
 
     const note = existingNotes.find((n: { id: any }) => n.id === noteId);
     if (!note) {
-      throw new Error('Note not found');
+      throw new Error("Note not found");
     }
 
-    const updatedNotes = existingNotes.filter((n: { id: any }) => n.id !== noteId);
-    const updatedFolders = existingFolders.map((folder: { id: any; notes: any }) => {
-      if (folder.id === folderId) {
-        return { ...folder, notes: [...folder.notes, note] };
+    const updatedNotes = existingNotes.filter(
+      (n: { id: any }) => n.id !== noteId
+    );
+    const updatedFolders = existingFolders.map(
+      (folder: { id: any; notes: any }) => {
+        if (folder.id === folderId) {
+          return { ...folder, notes: [...folder.notes, note] };
+        }
+        return folder;
       }
-      return folder;
-    });
+    );
 
     setNotes(updatedNotes);
     setFolders(updatedFolders);
 
-    localStorage.setItem(NOTES_KEY, JSON.stringify(updatedNotes));
-    localStorage.setItem(FOLDERS_KEY, JSON.stringify(updatedFolders));
+    saveNotes(updatedNotes);
+    saveFolders(updatedFolders);
 
-    successToast('Note moved to folder successfully!');
-    navigation.navigate('Home');
+    successToast("Note moved to folder successfully!");
+    navigation.navigate("Home");
   } catch (error) {
     failToast(`Failed to move note to folder: ${error}`);
     console.log(error);
   }
 };
 
-export const addNotesToFolder = (noteIds: string[], folderId: string, setNotes: (arg0: any) => void, setFolders: (arg0: any) => void) => {
+export const removeNoteFromFolder = (
+  noteId: string,
+  folderId: string,
+  setFolders: React.Dispatch<React.SetStateAction<Folder[]>>,
+  setNotes: React.Dispatch<React.SetStateAction<Note[]>>
+): void => {
   try {
-    const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]');
-    const folders = JSON.parse(localStorage.getItem(FOLDERS_KEY) || '[]');
+    const folders = loadFolders();
+    const mainNotes = loadNotes();
 
-    const selectedNotes = notes.filter((note: { id: any }) => noteIds.includes(note.id));
-    const remainingNotes = notes.filter((note: { id: any }) => !noteIds.includes(note.id));
+    let noteToRemove: Note | null = null;
+    const updatedFolders = folders.map((folder) => {
+      if (folder.id === folderId) {
+        const updatedNotes = folder.notes.filter((note: Note) => {
+          if (note.id === noteId) {
+            noteToRemove = note;
+            return false;
+          }
+          return true;
+        });
+        return { ...folder, notes: updatedNotes };
+      }
+      return folder;
+    });
 
-    const folderIndex = folders.findIndex((folder: { id: any }) => folder.id === folderId);
-    if (folderIndex === -1) {
-      throw new Error('Folder not found');
+    if (noteToRemove) {
+      const updatedMainNotes = [...mainNotes, noteToRemove];
+            saveFolders(updatedFolders);
+      saveNotes(updatedMainNotes);
+      setFolders(updatedFolders);
+      setNotes(updatedMainNotes);
+
+    navigation.navigate("Home");
+
+      successToast("Note moved back to main notes successfully!");
+    } else {
+      failToast("Note not found in the specified folder.");
     }
+  } catch (error) {
+    console.error("Failed to remove note from folder:", error);
+    failToast("Failed to remove note from folder.");
+  }
+};
 
-    folders[folderIndex].notes = [...folders[folderIndex].notes, ...selectedNotes];
+export const addNotesToFolder = (
+  noteIds: string[],
+  folderId:string,
+  setNotes: React.Dispatch<React.SetStateAction<Note[]>>,
+  setFolders: React.Dispatch<React.SetStateAction<Folder[]>>
+): void => {
+  try {
+    const notes = getNotes();
+    const folders = getFolders();
+
+    const selectedNotes = notes.filter((note) => noteIds.includes(note.id));
+    const remainingNotes = notes.filter((note) => !noteIds.includes(note.id));
+
+    const updatedFolders = folders.map((folder) =>
+      folder.id === folderId
+        ? { ...folder, notes: [...folder.notes, ...selectedNotes] }
+        : folder
+    );
+
+    saveNotes(remainingNotes);
+    saveFolders(updatedFolders);
 
     setNotes(remainingNotes);
-    setFolders(folders);
-    successToast('Notes added to folder');
-
-    localStorage.setItem(NOTES_KEY, JSON.stringify(remainingNotes));
-    localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
+    setFolders(updatedFolders);
+    successToast("Notes added to folder");
   } catch (error) {
     failToast(`Failed to add notes to folder: ${error}`);
   }
 };
 
-export const removeNotesFromFolder = (noteIds: string[], folderId: string, setNotes: (arg0: any) => void, setFolders: (arg0: any) => void, navigation: { navigate: (arg0: string) => void }) => {
+export const removeNotesFromFolder = (
+  noteIds: string[],
+  folderId: string,
+  setNotes: React.Dispatch<React.SetStateAction<Note[]>>,
+  setFolders: React.Dispatch<React.SetStateAction<Folder[]>>,
+  navigate: (path: string) => void
+): void => {
   try {
-    const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]');
-    const folders = JSON.parse(localStorage.getItem(FOLDERS_KEY) || '[]');
+    const notes = getNotes();
+    const folders = getFolders();
 
-    const folderIndex = folders.findIndex((folder: { id: any }) => folder.id === folderId);
-    if (folderIndex === -1) {
-      throw new Error('Folder not found');
-    }
+    const updatedFolders = folders.map((folder) => {
+      if (folder.id === folderId) {
+        const notesToRemove = folder.notes.filter((note) =>
+          noteIds.includes(note.id)
+        );
+        const remainingFolderNotes = folder.notes.filter(
+          (note) => !noteIds.includes(note.id)
+        );
 
-    const selectedNotes = folders[folderIndex].notes.filter((note: { id: any }) => noteIds.includes(note.id));
-    folders[folderIndex].notes = folders[folderIndex].notes.filter((note: { id: any }) => !noteIds.includes(note.id));
+        const updatedNotes = [...notes, ...notesToRemove];
+        saveNotes(updatedNotes);
+        setNotes(updatedNotes);
 
-    const updatedNotes = [...notes, ...selectedNotes];
+        return { ...folder, notes: remainingFolderNotes };
+      }
+      return folder;
+    });
 
-    setNotes(updatedNotes);
-    setFolders(folders);
-    successToast('Notes removed from folder');
-    navigation.navigate('Home');
-
-    localStorage.setItem(NOTES_KEY, JSON.stringify(updatedNotes));
-    localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
+    saveFolders(updatedFolders);
+    setFolders(updatedFolders);
+    successToast("Notes removed from folder");
+    navigate("/");
   } catch (error) {
     failToast(`Failed to remove notes from folder: ${error}`);
+    console.error("Error in removeNotesFromFolder:", error);
   }
 };
 
-export const deleteFolder = async (
+export const deleteFolder = (
   folderId: string,
-  setFolders: React.Dispatch<React.SetStateAction<any[]>>,
-  setNotes: React.Dispatch<React.SetStateAction<any[]>>,
+  setFolders: React.Dispatch<React.SetStateAction<Folder[]>>,
+  setNotes: React.Dispatch<React.SetStateAction<Note[]>>,
   navigate: (path: string) => void
-): Promise<void> => {
+): void => {
   try {
-    const existingFolders = loadFolders();
-    const mainNotes = loadNotes();
-    const folderToDelete = existingFolders.find((folder) => folder.id === folderId);
+    const folders = getFolders();
+    const notes = getNotes();
 
-    if (!folderToDelete) {
-      throw new Error(`Folder with ID ${folderId} not found.`);
-    }
+    const folderToDelete = folders.find((folder) => folder.id === folderId);
+    if (!folderToDelete) throw new Error("Folder not found");
 
-    const folderNotes = folderToDelete.notes || []; // Ensure notes defaults to an empty array if undefined
-    const updatedNotes = [...mainNotes, ...folderNotes];
-    localStorage.setItem(NOTES_KEY, JSON.stringify(updatedNotes));
-    setNotes(updatedNotes);
+    const updatedFolders = folders.filter((folder) => folder.id !== folderId);
+    const updatedNotes = [...notes, ...folderToDelete.notes];
 
-    const updatedFolders = existingFolders.filter((folder) => folder.id !== folderId);
-    localStorage.setItem(FOLDERS_KEY, JSON.stringify(updatedFolders));
+    saveFolders(updatedFolders);
+    saveNotes(updatedNotes);
+
     setFolders(updatedFolders);
-
-    successToast('Folder deleted successfully!');
-    navigate('/');
+    setNotes(updatedNotes);
+    successToast("Folder deleted successfully!");
+    navigate("/");
   } catch (error) {
-    console.error("Error deleting folder:", error);
     failToast(`Failed to delete folder: ${error}`);
   }
 };
@@ -153,16 +220,20 @@ export const deleteFolder = async (
 export const renameFolder = (
   folderId: string,
   newTitle: string,
-  setFolders: React.Dispatch<React.SetStateAction<any[]>>,
-  setIsEditingTitle: (arg0: boolean) => void
+  setFolders: React.Dispatch<React.SetStateAction<Folder[]>>,
+  setIsEditingTitle: React.Dispatch<React.SetStateAction<boolean>>
 ): void => {
-  const folders = loadFolders();
-  const updatedFolders = folders.map(folder =>
-    folder.id === folderId ? { ...folder, title: newTitle } : folder
-  );
+  try {
+    const folders = getFolders();
+    const updatedFolders = folders.map((folder) =>
+      folder.id === folderId ? { ...folder, title: newTitle } : folder
+    );
 
-  localStorage.setItem(FOLDERS_KEY, JSON.stringify(updatedFolders));
-  setFolders(updatedFolders);
-  setIsEditingTitle(false);
-  successToast('Folder renamed successfully!');
+    saveFolders(updatedFolders);
+    setFolders(updatedFolders);
+    setIsEditingTitle(false);
+    successToast("Folder renamed successfully!");
+  } catch (error) {
+    failToast(`Failed to rename folder: ${error}`);
+  }
 };

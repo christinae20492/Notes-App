@@ -1,10 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from '@remix-run/react';
-import { restoreNote, permanentlyDeleteNote, restoreMultipleNotes, deleteMultipleNotes, loadTrash } from '../utils/noteutility';
-import { Modal } from 'antd';
-import Layout from '~/components/ui/layout';
-import { FormOutlined, ReloadOutlined, DeleteOutlined, CheckCircleFilled } from '@ant-design/icons';
-import { MultiSelectCounter } from '~/components/ui/selectcounter';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "@remix-run/react";
+import {
+  restoreNote,
+  permanentlyDeleteNote,
+  restoreMultipleNotes,
+  deleteMultipleNotes,
+  loadTrash,
+} from "../utils/noteutility";
+import { Modal } from "antd";
+import Layout from "~/components/ui/layout";
+import {
+  FormOutlined,
+  ReloadOutlined,
+  DeleteOutlined,
+  CheckCircleFilled,
+} from "@ant-design/icons";
+import { MultiSelectCounter } from "~/components/ui/selectcounter";
+import { getTrash, saveTrash } from "~/utils/localStorage";
+import { Note } from "~/utils/types";
+import { failToast, warnToast } from "~/utils/toast";
+import { NoteModal } from "~/components/notemodal";
+import NoteItem from "~/components/notelogic";
 
 export default function TrashPage() {
   const [trashNotes, setTrashNotes] = useState([]);
@@ -15,15 +31,17 @@ export default function TrashPage() {
   const [isOptionsModalVisible, setIsOptionsModalVisible] = useState(false);
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
+  const [searchBar, setSearchBar] = useState(false);
   const [openSorter, setOpenSorter] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [refresh, setRefresh] = useState(false);
   const [currentNote, setCurrentNote] = useState(null);
   const [isModalOpen, setModalOpen] = useState(false);
 
-  
   useEffect(() => {
+    removeExpiredNotes();
     fetchData();
+    warnToast('Notes that\'ve been trashed 7 days ago will automatically be permanently deleted.')
   }, []);
 
   useEffect(() => {
@@ -41,13 +59,11 @@ export default function TrashPage() {
     if (selectedNotes.length === notesArray.length) {
       setSelectedNotes([]);
     } else {
-      setSelectedNotes(notesArray.map(note => note.id));
+      setSelectedNotes(notesArray.map((note) => note.id));
     }
   };
-  
 
   const handleRestore = () => {
-    const id = selectedNotes.id;
     if (selectedNote) {
       restoreNote(id, setTrashNotes, setNotes, navigate);
       setIsOptionsModalVisible(false);
@@ -63,38 +79,58 @@ export default function TrashPage() {
   };
 
   const handleDeleteSelectedNotes = () => {
-    const ids = selectedNotes.map(note => note.id);
     if (selectedNotes.length === 0) {
-      alert('Please select notes to delete.');
+      alert("Please select notes to delete.");
       return;
     }
-    deleteMultipleNotes(ids, setTrashNotes, () => {});
-    setSelectedNotes([]); // Clear selected notes
+    deleteMultipleNotes(selectedNotes, setTrashNotes, () => {});
+    setSelectedNotes([]); 
   };
 
   const handleRestoreSelectedNotes = () => {
-    const ids = selectedNotes.map(note => note.id);
     if (selectedNotes.length === 0) {
-      alert('Please select notes to restore.');
+      alert("Please select notes to restore.");
       return;
     }
-    restoreMultipleNotes(ids, setTrashNotes, () => {}, () => {});
+    restoreMultipleNotes(
+      selectedNotes,
+      setTrashNotes,
+      () => {},
+      () => {}
+    );
     setSelectedNotes([]);
-  };
-
-  const openOptionsModal = (note) => {
-    if (isMultiSelect===false) {
-    setSelectedNote(note);
-    setIsOptionsModalVisible(true);}
-  };
-
-  const openDeleteConfirmModal = () => {
-    setIsDeleteConfirmVisible(true);
   };
 
   const handleNoteClick = (note) => {
     setCurrentNote(note);
     setModalOpen(true);
+  };
+
+  const removeExpiredNotes = (): void => {
+    try {
+      const trashNotes = getTrash();
+      const nonExpiredNotes: Note[] = [];
+      const now = Date.now();
+  
+      trashNotes.forEach(note => {
+        const dateDeleted = new Date(note.dateDeleted!).getTime();
+        const ageInDays = (now - dateDeleted) / (1000 * 60 * 60 * 24);
+  
+        if (ageInDays >= 6 && ageInDays < 7) {
+          warnToast(`Warning: Note "${note.title}" will be permanently deleted in 1 day.`);
+        }
+  
+        if (ageInDays < 7) {
+          nonExpiredNotes.push(note);
+        }
+      });
+  
+      if (nonExpiredNotes.length !== trashNotes.length) {
+        saveTrash(nonExpiredNotes);
+      }
+    } catch (error) {
+      failToast(`Failed to remove expired notes: ${error}`);
+    }
   };
 
   const renderNote = (note: any) => (
@@ -125,75 +161,93 @@ export default function TrashPage() {
 
   return (
     <>
-    {isMultiSelect && <MultiSelectCounter selectedNotes={selectedNotes} />}
-    <Layout
-      setIsMultiSelect={setIsMultiSelect}
-      isMultiSelect={isMultiSelect}
-      setOpenSorter={setOpenSorter}
-      setShowSettings={setShowSettings}
-      setRefresh={setRefresh}>
-
-      <div className="max-h-1/2 p-8">
-        {trashNotes.length === 0 ? (
-          <p className="text-lg text-gray-500 text-center font-body">The trash was just taken out.</p>
-        ) : (
-          <div className="note-container">
-            {trashNotes.map((note) => (
-              <div
+      {isMultiSelect && <MultiSelectCounter selectedNotes={selectedNotes} />}
+      <Layout
+        setIsMultiSelect={setIsMultiSelect}
+        isMultiSelect={isMultiSelect}
+        setSearchBar={setSearchBar}
+        searchBar={searchBar}
+        setOpenSorter={setOpenSorter}
+        setShowSettings={setShowSettings}
+        setRefresh={setRefresh}
+      >
+        <div className="max-h-1/2 p-8">
+          {trashNotes.length === 0 ? (
+            <p className="text-lg text-gray-500 text-center font-body">
+              The trash was just taken out.
+            </p>
+          ) : (
+            <div className="note-container">
+              {trashNotes.map((note) => (
+                <div
+                  key={note.id}
+                  className=""
+                >
+                  <NoteItem
                 key={note.id}
-                className=""
-                onClick={() => openOptionsModal(note)}
-              >
-                {renderNote(note)}
-              </div>
-            ))}
+                note={note}
+                isSelected={selectedNotes.includes(note.id)}
+                isPinned={false}
+                isMultiSelect={isMultiSelect}
+                onClick={handleNoteClick}
+              />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <Modal
+          visible={isDeleteConfirmVisible}
+          onCancel={() => setIsDeleteConfirmVisible(false)}
+          onOk={handlePermanentDelete}
+          okText="Delete"
+          cancelText="Cancel"
+          title="Confirm Delete"
+        >
+          Are you sure you want to permanently delete this note?
+        </Modal>
+
+        <NoteModal 
+        isOpen={isModalOpen}
+        note={currentNote}
+        onClose={() => setModalOpen(false)}
+        onSaveNote={null}
+        setNotes={null}
+        setTrashNotes={setTrashNotes}
+        navigate={navigate}
+        isInFolder={false}
+          isInTrash={true}
+          folderId={undefined}
+        />
+
+        {isMultiSelect && (
+          <div className="bg-white rounded-xl min-w-5/6 min-h-6 float-right absolute bottom-4 right-6 ring-2 drop-shadow-md p-2">
+            <button
+              className="mx-3 scale-150"
+              onClick={handleDeleteSelectedNotes}
+            >
+              <DeleteOutlined />
+            </button>
+            <button
+              className="mx-3 scale-150"
+              onClick={handleRestoreSelectedNotes}
+            >
+              <ReloadOutlined />
+            </button>
+            <button
+              className={`mx-3 scale-150 ${
+                selectedNotes.length === trashNotes.length
+                  ? "text-blue-500"
+                  : ""
+              }`}
+              onClick={() => handleSelectAllNotes(trashNotes)}
+            >
+              <CheckCircleFilled />
+            </button>
           </div>
         )}
-      </div>
-
-      {/* Modal for options (Restore, Delete) */}
-      <Modal
-        visible={isOptionsModalVisible}
-        onCancel={() => setIsOptionsModalVisible(false)}
-        footer={null}
-      >
-        <button onClick={handleRestore} className="p-4 bg-vague rounded-lg">
-          Restore Note
-        </button><br />
-        <button onClick={openDeleteConfirmModal} className="p-4 bg-red text-white rounded-lg">
-          Permanently Delete
-        </button>
-      </Modal>
-
-      {/* Confirmation modal for permanent delete */}
-      <Modal
-        visible={isDeleteConfirmVisible}
-        onCancel={() => setIsDeleteConfirmVisible(false)}
-        onOk={handlePermanentDelete}
-        okText="Delete"
-        cancelText="Cancel"
-        title="Confirm Delete"
-      >
-        Are you sure you want to permanently delete this note?
-      </Modal>
-
-      {isMultiSelect && (
-        <div className="bg-white rounded-xl min-w-5/6 min-h-6 float-right absolute bottom-4 right-6 ring-2 drop-shadow-md p-2">
-          <button
-            className="mx-3 scale-150"
-            onClick={handleDeleteSelectedNotes}
-          >
-            <DeleteOutlined />
-          </button>
-          <button className="mx-3 scale-150" onClick={handleRestoreSelectedNotes}>
-            <ReloadOutlined />
-          </button>
-          <button className={`mx-3 scale-150 ${selectedNotes.length === trashNotes.length ? "text-blue-500" : ""}`} onClick={()=>handleSelectAllNotes(trashNotes)}>
-            <CheckCircleFilled />
-            </button>
-        </div>
-      )}
-    </Layout>
+      </Layout>
     </>
   );
 }

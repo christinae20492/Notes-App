@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { copyNote, deleteNote } from "~/utils/noteutility";
-import { successToast } from "~/utils/toast";
+import { removeNoteFromFolder } from "~/utils/folderutil";
+import { copyNote, deleteNote,permanentlyDeleteNote, restoreNote } from "~/utils/noteutility";
 
 interface NoteModalProps {
   isOpen: boolean;
@@ -8,8 +8,12 @@ interface NoteModalProps {
   onClose: () => void;
   onSaveNote: (updatedContent: string) => void;
   setNotes: React.Dispatch<React.SetStateAction<any[]>>;
+  setFolders: React.Dispatch<React.SetStateAction<any[]>>;
+  setTrashNotes: React.Dispatch<React.SetStateAction<any[]>>;
   navigate: (path: string) => void;
-  isInFolder: boolean;
+  isInFolder:boolean;
+  isInTrash: boolean;
+  folderId?:string;
 }
 
 export const NoteModal: React.FC<NoteModalProps> = ({
@@ -18,8 +22,12 @@ export const NoteModal: React.FC<NoteModalProps> = ({
   onClose,
   onSaveNote,
   setNotes,
+  setFolders,
+  setTrashNotes,
   navigate,
   isInFolder,
+  isInTrash,
+  folderId
 }) => {
   
   const [updatedNote, setUpdatedNote] = useState(note);
@@ -32,14 +40,35 @@ export const NoteModal: React.FC<NoteModalProps> = ({
 
   const handleDeleteNote = () => {
     if (note?.id) {
-      deleteNote(note.id, setNotes, navigate, isInFolder);
+      if (isInFolder) {
+        deleteNote(note.id, setNotes, navigate, folderId);
+      } else if (isInTrash){
+        permanentlyDeleteNote(note.id, navigate)
+      } else {
+        deleteNote(note.id, setNotes, navigate);
+      }
       onClose();
     }
   };
 
+  const handleRestoreNote = () =>{
+    restoreNote(note.id, setTrashNotes, navigate)
+  }
+
   const handleCopyNote = () => {
-    copyNote(note.id, setNotes, isInFolder);
+    if (isInFolder) {
+    copyNote(note.id, setNotes, folderId);
+    onClose();
+    }else{
+      copyNote(note.id, setNotes);
+    onClose();
+    }
   };
+
+  const handleMoveNote = () =>{
+    removeNoteFromFolder(note.id, folderId, setFolders, setNotes, navigate);
+    onClose();
+  }
 
   if (!isOpen) return null;
 
@@ -53,21 +82,40 @@ export const NoteModal: React.FC<NoteModalProps> = ({
           className="w-full p-3 border border-gray-300 rounded h-3/4"
         />
         <div className="flex justify-end mt-4">
-          <button className="button bg-blue" onClick={handleCopyNote}>
+          {isInTrash ? (
+            <button className="button bg-blue" onClick={handleRestoreNote}>
+            Restore
+          </button>
+          ) : (
+            <button className="button bg-blue" onClick={handleCopyNote}>
             Copy
           </button>
+          )}
+          
           <button className="button bg-red" onClick={handleDeleteNote}>
             Delete
           </button>
+
           <button className="button" onClick={onClose}>
             Close
           </button>
+
+          {isInTrash ? (
+            <div></div>
+          ) : (
           <button
             className="submit-button"
             onClick={() => onSaveNote(updatedNote)}
           >
             Save Note
           </button>
+          )}
+
+          {isInFolder && (
+          <button className="button bg-cerulean" onClick={handleMoveNote}>
+            Remove from Folder
+          </button>
+          )}
         </div>
       </div>
     </div>

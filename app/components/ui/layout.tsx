@@ -1,18 +1,20 @@
 import React from 'react';
 import { Link } from '@remix-run/react';
-import { PlusOutlined, FolderOutlined, CheckCircleOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, CheckCircleOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { SortAscendingOutlined, SyncOutlined, EllipsisOutlined } from '@ant-design/icons';
 
 interface LayoutProps {
   children: React.ReactNode;
   setIsMultiSelect: (value: boolean) => void;
   isMultiSelect: boolean;
+  setSearchBar: (value: boolean) => void;
+  searchBar: boolean;
   setOpenSorter: (visible: boolean) => void;
   setShowSettings: (visible: boolean) => void;
   setRefresh: (value: boolean) => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, setIsMultiSelect, isMultiSelect, setOpenSorter, setShowSettings, setRefresh }) => {
+const Layout: React.FC<LayoutProps> = ({ children, setIsMultiSelect, isMultiSelect, setSearchBar, searchBar, setOpenSorter, setShowSettings, setRefresh }) => {
   return (
     <div className="flex flex-col h-screen w-screen">
       <header className="bg-gray-100 h-16 flex items-center justify-between p-5 shadow-sm">
@@ -35,6 +37,16 @@ const Layout: React.FC<LayoutProps> = ({ children, setIsMultiSelect, isMultiSele
             <CheckCircleOutlined />
             <span className="font-body text-xs text-darkgrey">
               {isMultiSelect ? 'Deselect' : 'Select'}
+            </span>
+          </div>
+
+          <div 
+            className="block p-3 scale-150 justify-center my-7 cursor-pointer" 
+            onClick={()=>{setSearchBar(!searchBar)}}
+          >
+            <SearchOutlined />
+            <span className="font-body text-xs text-darkgrey">
+              Search
             </span>
           </div>
 

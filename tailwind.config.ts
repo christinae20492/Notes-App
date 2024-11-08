@@ -18,6 +18,10 @@ export default {
       'red':'#e34653',
       'pink':'#ffc7d1',
 
+      'mauve':'#54567d',
+      'cerulean':'#22266b',
+      'depths':'#090b24',
+
       'lightgrey':'#c9c9c9',
       'darkgrey':'#4f4f4f',
     },

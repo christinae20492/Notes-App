@@ -1,18 +1,46 @@
-import React from 'react';
-import { Pressable, Text } from 'react-native';
-import { Entypo } from '@expo/vector-icons';
-import { styles } from '../styles/styles';
-import { deleteFolder } from '../utils/folderutil';
+import React from "react";
+import { FolderOpenOutlined } from "@ant-design/icons";
+import { useNavigate } from "@remix-run/react";
 
-export const FolderItem = ({ item, navigation, setFolders }) => {
+interface FolderItemProps {
+  folder: {
+    id: string;
+    title: string;
+  };
+  isSelected: boolean;
+  isMultiSelect: boolean;
+  onSelect: (folderId: string) => void;
+}
+
+const FolderItem: React.FC<FolderItemProps> = ({
+  folder,
+  isSelected,
+  isMultiSelect,
+  onSelect,
+}) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (isMultiSelect) {
+      onSelect(folder.id);
+    } else {
+      navigate(`/viewfolder/${encodeURIComponent(folder.id)}`, {
+        state: { folder },
+      });
+    }
+  };
+
   return (
-    <Pressable
-      style={styles.folderItem}
-      onPress={() => navigation.navigate('Current Folder', { folder: item })}
-      onLongPress={() => deleteFolder(item.id, setFolders, navigation)}
+    <div
+      key={folder.id}
+      className={`folder-item ${isSelected ? "selected-folder" : ""}`}
+      onClick={handleClick}
     >
-      <Entypo name="folder" size={26} color="#115df5" />
-      <Text style={styles.noteTitle}>{item.title}</Text>
-    </Pressable>
+      <FolderOpenOutlined style={{ color: "steelblue", fontSize: "1.5rem" }} />
+      <br />
+      <span className="folder-title">{folder.title}</span>
+    </div>
   );
 };
+
+export default FolderItem;

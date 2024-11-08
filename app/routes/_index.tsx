@@ -3,14 +3,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "@remix-run/react";
 import {
   loadNotes,
-  deleteNote,
   moveMultipleNotesToTrash,
   togglePinNotes,
 } from "../utils/noteutility";
 import {
   createFolder,
   loadFolders,
-  moveNoteToFolder,
   addNotesToFolder,
 } from "../utils/folderutil";
 import {
@@ -18,13 +16,15 @@ import {
   DeleteOutlined,
   SwapOutlined,
   PushpinOutlined,
-  FolderOpenOutlined,
   CheckCircleFilled,
 } from "@ant-design/icons";
 import { SortPicker } from "~/components/sorter";
 import { NoteModal } from "~/components/notemodal";
 import Layout from "~/components/ui/layout";
 import { MultiSelectCounter } from "~/components/ui/selectcounter";
+import { SearchBar } from "~/components/searchbar";
+import FolderItem from "~/components/folderlogic";
+import NoteItem from "~/components/notelogic";
 
 export const meta: MetaFunction = () => {
   return [
@@ -38,10 +38,10 @@ export default function Index() {
   const [folders, setFolders] = useState([]);
   const [newFolder, setNewFolder] = useState("");
   const [selectedNotes, setSelectedNotes] = useState([]);
-  const [notesToCopy, setNotesToCopy] = useState([]);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [textInputVisible, setTextInputVisible] = useState(false);
+  const [searchBar, setSearchBar] = useState(false);
   const [openSorter, setOpenSorter] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isModalOpen, setModalOpen] = useState(false);
@@ -50,7 +50,6 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
 
   const [isMultiSelect, setIsMultiSelect] = useState(false);
-  const [longPressedNote, setLongPressedNote] = useState(null);
   const [inputText, setInputText] = useState("New folder");
   const navigate = useNavigate();
 
@@ -59,10 +58,6 @@ export default function Index() {
 
   const [currentNote, setCurrentNote] = useState("");
 
-  const handleNoteClick = (note: React.SetStateAction<null>) => {
-    setCurrentNote(note);
-    setModalOpen(true);
-  };
 
   useEffect(() => {
     fetchData();
@@ -83,23 +78,34 @@ export default function Index() {
     setLoading(false);
   };
 
-  const handleDeleteNote = (id: string) => {
-    deleteNote(id);
-    fetchData();
-    setIsModalVisible(false);
-  };
-
   const handleSaveNote = (updatedContent: any) => {
     const updatedNote = { ...currentNote, content: updatedContent };
     console.log("Updated note:", updatedNote);
     setModalOpen(false);
   };
 
+  const handleAddNotes = () =>{
+    
+const getFolderIdFromNotes = (ids) =>{
+  for (let i=0; i<ids.length; i++) {
+    if (ids[i].startsWith('F')) {
+      return ids[i];
+    }
+  }
+}
+
+let folder = getFolderIdFromNotes(selectedNotes);
+
+addNotesToFolder(selectedNotes, folder, setNotes, setFolders)
+setIsMultiSelect(false);
+setSelectedNotes([]);
+  }
+
   const handleSelectAllNotes = (notesArray) => {
     if (selectedNotes.length === notesArray.length) {
       setSelectedNotes([]);
     } else {
-      setSelectedNotes(notesArray.map(note => note.id));
+      setSelectedNotes(notesArray.map((note) => note.id));
     }
   };
 
@@ -108,93 +114,24 @@ export default function Index() {
     createFolder(inputText, setFolders, setNewFolder, setTextInputVisible);
   };
 
-  const openModal = (note: any) => {
-    setLongPressedNote(note);
-    setIsModalVisible(true);
+  const handleSelectFolder = (folderId: string) => {
+    setSelectedNotes((prev) =>
+      prev.includes(folderId) ? prev.filter((id) => id !== folderId) : [...prev, folderId]
+    );
   };
 
-  const renderNote = (note: any) => (
-    <div
-      key={note.id}
-      className={`note-item ${
-        selectedNotes.includes(note.id) ? "selected-note" : ""
-      }`}
-      onClick={() => {
-        if (isMultiSelect) {
-          setSelectedNotes((prev) => {
-            return prev.includes(note.id)
-              ? prev.filter((id) => id !== note.id)
-              : [...prev, note.id];
-          });
-        } else {
-          handleNoteClick(note);
-        }
-      }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        openModal(note);
-      }}
-    >
-      <div>
-        <FormOutlined />
-      </div>
-      <div
-        className="fixed w-5 h-14 rounded-lg"
-        style={{ backgroundColor: note.color }}
-      ></div>
-      <div>{note.title}</div>
-      <div>{note.id}</div>
-    </div>
-  );
-
-  const renderPinnedNote = (note: any) => (
-    <div
-      key={note.id}
-      className={`note-item font-semibold bg-lightgrey w-3/4 ${
-        selectedNotes.includes(note.id) ? "selected-note bg-blue" : ""
-      }`}
-      onClick={() => {
-        if (isMultiSelect) {
-          setSelectedNotes((prev) => {
-            return prev.includes(note.id)
-              ? prev.filter((id) => id !== note.id)
-              : [...prev, note.id];
-          });
-        } else {
-          handleNoteClick(note);
-        }
-      }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        openModal(note);
-      }}
-    >
-      <div>
-        <FormOutlined />
-      </div>
-      <div
-        className="fixed w-2 h-8 rounded-lg outline-1 outline-black"
-        style={{ backgroundColor: note.color }}
-      ></div>
-      <div>{note.title}</div>
-    </div>
-  );
-
-  const renderFolder = (folder: any) => (
-    <div
-      key={folder.id}
-      className="folder-item"
-      onClick={() =>
-        navigate(`/viewfolder/${encodeURIComponent(folder.id)}`, {
-          state: { folder },
-        })
-      }
-    >
-      <FolderOpenOutlined style={{ color: "steelblue", scale: "1.5" }} />
-      <br />
-      {folder.title}
-    </div>
-  );
+  const handleNoteClick = (note: React.SetStateAction<null>) => {
+    if (isMultiSelect) {
+      setSelectedNotes((prev) => {
+        return prev.includes(note.id)
+          ? prev.filter((id) => id !== note.id)
+          : [...prev, note.id];
+      });
+    } else {
+    setCurrentNote(note);
+        setModalOpen(true);
+    }
+  };
 
   return (
     <>
@@ -203,10 +140,16 @@ export default function Index() {
       <Layout
         setIsMultiSelect={setIsMultiSelect}
         isMultiSelect={isMultiSelect}
+        setSearchBar={setSearchBar}
+        searchBar={searchBar}
         setOpenSorter={setOpenSorter}
         setShowSettings={setShowSettings}
         setRefresh={setRefresh}
       >
+        {searchBar && (
+          <SearchBar setNotes={setNotes} />
+        )}
+
         <div className="bg-lightgrey p-8 rounded-lg shadow-lg w-lg text-center">
           {folders.length === 0 ? (
             <p className="text-lg text-gray-500 text-center">
@@ -215,7 +158,13 @@ export default function Index() {
           ) : (
             <div className="note-container">
               {folders.map((folder) => (
-                <div key={folder.id}>{renderFolder(folder)}</div>
+                <FolderItem
+                key={folder.id}
+                folder={folder}
+                isSelected={selectedNotes.includes(folder.id)}
+                isMultiSelect={isMultiSelect}
+                onSelect={handleSelectFolder}
+              />
               ))}
             </div>
           )}
@@ -258,7 +207,14 @@ export default function Index() {
           ) : (
             <div className="note-container">
               {pinnedNotes.map((note) => (
-                <div key={note.id}>{renderPinnedNote(note)}</div>
+                <NoteItem
+                key={note.id}
+                note={note}
+                isSelected={selectedNotes.includes(note.id)}
+                isPinned={true}
+                isMultiSelect={isMultiSelect}
+                onClick={handleNoteClick}
+              />
               ))}
             </div>
           )}
@@ -272,7 +228,14 @@ export default function Index() {
           ) : (
             <div className="note-container">
               {regularNotes.map((note) => (
-                <div key={note.id}>{renderNote(note)}</div>
+                <NoteItem
+                key={note.id}
+                note={note}
+                isSelected={selectedNotes.includes(note.id)}
+                isPinned={false}
+                isMultiSelect={isMultiSelect}
+                onClick={handleNoteClick}
+              />
               ))}
             </div>
           )}
@@ -282,21 +245,28 @@ export default function Index() {
           <div className="bg-white rounded-xl min-w-5/6 min-h-6 float-right absolute bottom-4 right-6 ring-2 drop-shadow-md p-2">
             <button
               className="mx-3 scale-150"
-              onClick={() => moveMultipleNotesToTrash(selectedNotes, setNotes)}
+              onClick={() =>
+                moveMultipleNotesToTrash(selectedNotes, undefined, setNotes)
+              }
             >
               <DeleteOutlined />
             </button>
-            <button className="mx-3 scale-150" onClick={() => addNotesToFolder}>
+            <button className="mx-3 scale-150" onClick={handleAddNotes}>
               <SwapOutlined />
             </button>
             <button
               className="mx-3 scale-150"
-              onClick={() => togglePinNotes(selectedNotes, setNotes)}
+              onClick={() => togglePinNotes(selectedNotes, setNotes, undefined)}
             >
               <PushpinOutlined />
             </button>
-            <button className={`mx-3 scale-150 ${selectedNotes.length === notes.length ? "text-blue-500" : ""}`} onClick={()=>handleSelectAllNotes(notes)}>
-            <CheckCircleFilled />
+            <button
+              className={`mx-3 scale-150 ${
+                selectedNotes.length === notes.length ? "text-blue-500" : ""
+              }`}
+              onClick={() => handleSelectAllNotes(notes)}
+            >
+              <CheckCircleFilled />
             </button>
           </div>
         )}
@@ -307,8 +277,12 @@ export default function Index() {
           onClose={() => setModalOpen(false)}
           onSaveNote={handleSaveNote}
           setNotes={setNotes}
+          setFolders={setFolders}
+          setTrashNotes={null}
           navigate={navigate}
           isInFolder={false}
+          isInTrash={false}
+          folderId={undefined}
         />
       </Layout>
     </>

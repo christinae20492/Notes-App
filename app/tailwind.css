@@ -48,6 +48,9 @@
     .selected-note {
       @apply bg-bluegrey ring ring-darksteelgrey;
     }
+    .selected-folder {
+      @apply bg-darksteelgrey ring ring-white text-white;
+    }
     .sort-option {
       @apply p-2 ring m-1 rounded-sm ring-lightgrey
         hover:ring-darksteelgrey;
